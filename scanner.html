@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Scanner - Juno Attendance</title>
+  <script src="https://zxing-cpp.github.io/zxing-cpp/zxing_reader.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      overflow-x: hidden;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .header h1 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      transition: background 0.3s;
+      white-space: nowrap;
+    }
+
+    .nav-links a:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    .scanner-card {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      margin-bottom: 30px;
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .scanner-controls {
+      padding: 20px;
+      text-align: center;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .control-group {
+      margin: 10px 0;
+      display: inline-block;
+      margin-right: 20px;
+    }
+
+    .control-group label {
+      display: inline-block;
+      margin-right: 8px;
+      font-weight: bold;
+    }
+
+    .control-group select,
+    .control-group button {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    .zoom-control {
+      margin: 15px 0;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .zoom-slider {
+      width: 280px;
+      height: 8px;
+      margin: 0 15px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #ddd;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .zoom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #667eea;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .zoom-slider::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #667eea;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .zoom-value {
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .scanner-area {
+      padding: 20px;
+      text-align: center;
+    }
+
+    #canvas {
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      border: 2px solid #667eea;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      display: block;
+    }
+
+    .status-indicator {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 10px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .status-scanning {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status-success {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .manual-input {
+      margin: 20px 0;
+      text-align: left;
+    }
+
+    .manual-input label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: bold;
+    }
+
+    .manual-input input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: transform 0.2s;
+      margin: 5px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+
+    .results-section {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .results-header {
+      background: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .results-content {
+      padding: 20px;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+    }
+
+    .result-info {
+      flex-grow: 1;
+    }
+
+    .result-username {
+      font-weight: bold;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .result-name {
+      color: #666;
+      font-size: 14px;
+      margin: 2px 0;
+    }
+
+    .result-status {
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .error-message {
+      color: #dc3545;
+      font-size: 12px;
+      margin-top: 3px;
+      font-style: italic;
+    }
+
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .status-success {
+      background: #28a745;
+    }
+
+    .status-partial {
+      background: #ffc107;
+    }
+
+    .status-error {
+      background: #dc3545;
+    }
+
+    .summary {
+      display: flex;
+      justify-content: space-around;
+      margin: 20px 0;
+      padding: 20px;
+      background: #f1f3f4;
+      border-radius: 10px;
+    }
+
+    .summary-item {
+      text-align: center;
+    }
+
+    .summary-number {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .summary-success {
+      color: #28a745;
+    }
+
+    .summary-partial {
+      color: #ffc107;
+    }
+
+    .summary-error {
+      color: #dc3545;
+    }
+
+    .summary-label {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .loading-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 10px;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .nav-links {
+        justify-content: center;
+      }
+
+      .control-group {
+        display: block;
+        margin: 10px 0;
+      }
+
+      .result-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+
+      .summary {
+        flex-direction: column;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>📱 QR Scanner</h1>
+      <div class="nav-links">
+        <a href="index.html">🏠 Home</a>
+        <a href="accounts.html">👥 Accounts</a>
+        <a href="login.html">🚪 Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="scanner-card">
+      <div class="card-header">
+        <h2>🔍 ZXing QR Code Scanner</h2>
+        <p>Fast and reliable QR code detection</p>
+      </div>
+
+      <div class="scanner-controls">
+        <div class="control-group">
+          <label>Camera:</label>
+          <select id="cameraSelector">
+            <option value="">🔄 Loading cameras...</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <button id="startBtn" class="btn">📹 Start Scanner</button>
+          <button id="stopBtn" class="btn btn-danger" disabled>
+            ⏹️ Stop Scanner
+          </button>
+        </div>
+
+        <div class="zoom-control">
+          <label>🔍 Zoom: </label>
+          <input type="range" id="zoomSlider" class="zoom-slider" min="1" max="3" step="0.1" value="1" disabled />
+          <span id="zoomValue" class="zoom-value">1.0x</span>
+        </div>
+      </div>
+
+      <div class="scanner-area">
+        <canvas id="canvas"></canvas>
+        <div id="status" class="status-indicator status-scanning">
+          📱 Ready to scan QR codes
+        </div>
+      </div>
+
+      <div style="padding: 20px">
+        <div class="manual-input">
+          <label for="manual-qr">🖊️ Manual QR Code Entry (backup):</label>
+          <input type="text" id="manual-qr" placeholder="Enter QR code manually if camera doesn't work" />
+          <button id="manual-submit" class="btn btn-success">
+            ✅ Submit QR Code
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-section" id="results-section" style="display: none">
+      <div class="results-header">
+        <h2>📊 Attendance Results</h2>
+      </div>
+      <div class="results-content" id="results-content">
+        <!-- Results will be populated here -->
+      </div>
+    </div>
+  </div>
+
+  <script src="zxing_reader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabase_client.js"></script>
+  <script>
+    let zxing = null;
+    let currentStream = null;
+    let isScanning = false;
+    let currentVideo = null;
+    let currentZoom = 1.0;
+    let availableCameras = [];
+
+    // Enumerate available cameras
+    async function getCameras() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(
+          (device) => device.kind === "videoinput"
+        );
+
+        const cameraSelector = document.getElementById("cameraSelector");
+        cameraSelector.innerHTML = ""; // Clear existing options
+
+        availableCameras = videoDevices;
+
+        if (videoDevices.length === 0) {
+          cameraSelector.innerHTML =
+            '<option value="">No cameras found</option>';
+          return;
+        }
+
+        let selectedCameraId = null;
+        let backCameraFound = false;
+
+        videoDevices.forEach((device, index) => {
+          const option = document.createElement("option");
+          option.value = device.deviceId;
+
+          // Create friendly names and identify main back camera
+          let label = device.label || `Camera ${index + 1}`;
+          const labelLower = label.toLowerCase();
+
+          if (labelLower.includes("back") || labelLower.includes("rear")) {
+            label = `📷 ${label} (Back)`;
+
+            // Prioritize main back camera (not ultra-wide or telephoto)
+            if (
+              !backCameraFound &&
+              !labelLower.includes("ultra") &&
+              !labelLower.includes("wide") &&
+              !labelLower.includes("telephoto") &&
+              !labelLower.includes("tele") &&
+              !labelLower.includes("zoom")
+            ) {
+              selectedCameraId = device.deviceId;
+              backCameraFound = true;
+              option.selected = true;
+            } else if (!selectedCameraId && labelLower.includes("back")) {
+              // Fallback to any back camera if main not found
+              selectedCameraId = device.deviceId;
+              option.selected = true;
+            }
+          } else if (
+            labelLower.includes("front") ||
+            labelLower.includes("user")
+          ) {
+            label = `🤳 ${label} (Front)`;
+          } else {
+            label = `📹 ${label}`;
+            // If no back camera found yet, use first available camera
+            if (!selectedCameraId) {
+              selectedCameraId = device.deviceId;
+              option.selected = true;
+            }
+          }
+
+          option.textContent = label;
+          cameraSelector.appendChild(option);
+        });
+
+        console.log(
+          `Found ${videoDevices.length} cameras, selected:`,
+          selectedCameraId
+        );
+
+        // Return the selected camera ID for auto-start
+        return selectedCameraId;
+      } catch (error) {
+        console.error("Error enumerating cameras:", error);
+        updateStatus("❌ Error accessing cameras", "error");
+        return null;
+      }
+    }
+
+    // Get camera capabilities and update zoom range
+    async function updateZoomRange(deviceId) {
+      try {
+        if (!deviceId) return;
+
+        // Get a temporary stream to check capabilities
+        const tempStream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: deviceId } },
+        });
+
+        const track = tempStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
+
+        const zoomSlider = document.getElementById("zoomSlider");
+
+        if (capabilities.zoom) {
+          const minZoom = capabilities.zoom.min || 1;
+          const maxZoom = capabilities.zoom.max || 3;
+
+          zoomSlider.min = minZoom;
+          zoomSlider.max = maxZoom;
+          zoomSlider.step = (maxZoom - minZoom) / 20; // 20 steps
+          zoomSlider.value = minZoom;
+          currentZoom = minZoom;
+
+          document.getElementById("zoomValue").textContent =
+            minZoom.toFixed(1) + "x";
+
+          console.log(`Camera zoom range: ${minZoom}x - ${maxZoom}x`);
+        } else {
+          // Digital zoom fallback
+          zoomSlider.min = 1;
+          zoomSlider.max = 4;
+          zoomSlider.step = 0.1;
+          zoomSlider.value = 1;
+          currentZoom = 1;
+
+          console.log(
+            "Camera does not support optical zoom, using digital zoom"
+          );
+        }
+
+        // Close temporary stream
+        tempStream.getTracks().forEach((track) => track.stop());
+      } catch (error) {
+        console.error("Error getting camera capabilities:", error);
+        // Fallback to default zoom range
+        const zoomSlider = document.getElementById("zoomSlider");
+        zoomSlider.min = 1;
+        zoomSlider.max = 5;
+        zoomSlider.step = 0.1;
+        zoomSlider.value = 1;
+        currentZoom = 1;
+      }
+    }
+
+    // Initialize ZXing WASM
+    async function initializeZXing() {
+      try {
+        // The local zxing_reader.js will automatically look for zxing_reader.wasm in the same directory
+        zxing = await ZXing();
+        console.log("ZXing WASM initialized successfully");
+        updateStatus("📱 ZXing QR Scanner ready", "scanning");
+      } catch (error) {
+        console.error("Error initializing ZXing:", error);
+        updateStatus("❌ Error initializing scanner: " + error.message, "error");
+      }
+    }
+
+    // ZXing barcode reading function
+    function readBarcodeFromCanvas(canvas) {
+      if (!zxing) return null;
+
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const imageData = ctx.getImageData(0, 0, imgWidth, imgHeight);
+      const sourceBuffer = imageData.data;
+
+      try {
+        const buffer = zxing._malloc(sourceBuffer.byteLength);
+        zxing.HEAPU8.set(sourceBuffer, buffer);
+        const result = zxing.readBarcodeFromPixmap(
+          buffer,
+          imgWidth,
+          imgHeight,
+          false,
+          "QRCode"
+        );
+        zxing._free(buffer);
+        return result;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    // Update status display
+    function updateStatus(message, type = "scanning") {
+      const statusElement = document.getElementById("status");
+      statusElement.textContent = message;
+      statusElement.className = `status-indicator status-${type}`;
+    }
+
+    // Set responsive canvas size based on video and screen
+    function setCanvasSize(canvas, video) {
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      const aspectRatio = videoWidth / videoHeight;
+
+      // Get container width (accounting for padding)
+      const container = canvas.parentElement;
+      const containerWidth = container.clientWidth - 40; // Account for padding
+      const maxWidth = Math.min(containerWidth, window.innerWidth - 40);
+
+      // Calculate optimal canvas size
+      let canvasWidth = maxWidth;
+      let canvasHeight = maxWidth / aspectRatio;
+
+      // If height is too tall for mobile, constrain by height
+      const maxHeight = window.innerHeight * 0.5; // Max 50% of screen height
+      if (canvasHeight > maxHeight) {
+        canvasHeight = maxHeight;
+        canvasWidth = canvasHeight * aspectRatio;
+      }
+
+      // Set canvas dimensions
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      console.log(
+        `Canvas size: ${canvasWidth}x${canvasHeight}, Video: ${videoWidth}x${videoHeight}`
+      );
+    }
+
+    // Start QR code scanning
+    async function startScanner() {
+      if (!zxing) {
+        await initializeZXing();
+      }
+
+      if (isScanning) {
+        console.log("Scanner already running");
+        return;
+      }
+
+      try {
+        const cameraSelector = document.getElementById("cameraSelector");
+        const selectedDeviceId = cameraSelector.value;
+
+        if (!selectedDeviceId) {
+          updateStatus("❌ No camera selected", "error");
+          return;
+        }
+
+        updateStatus("🔄 Starting camera...", "scanning");
+
+        // Clear canvas to prevent old frame detection
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // High-quality video constraints using device ID
+        const constraints = {
+          video: {
+            deviceId: { exact: selectedDeviceId },
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            frameRate: { ideal: 30, min: 15 },
+            focusMode: "continuous",
+            whiteBalanceMode: "continuous",
+            exposureMode: "continuous",
+            zoom: currentZoom > 1 ? { ideal: currentZoom } : undefined,
+          },
+        };
+
+        currentStream = await navigator.mediaDevices.getUserMedia(
+          constraints
+        );
+
+        currentVideo = document.createElement("video");
+        currentVideo.srcObject = currentStream;
+        currentVideo.setAttribute("playsinline", true);
+        await currentVideo.play();
+
+        // Wait for video metadata to load and set responsive canvas size
+        await new Promise((resolve) => {
+          if (currentVideo.videoWidth > 0) {
+            resolve();
+          } else {
+            currentVideo.addEventListener("loadedmetadata", resolve, {
+              once: true,
+            });
+          }
+        });
+
+        // Set responsive canvas size based on video dimensions
+        setCanvasSize(canvas, currentVideo);
+
+        isScanning = true;
+        document.getElementById("startBtn").disabled = true;
+        document.getElementById("stopBtn").disabled = false;
+        document.getElementById("zoomSlider").disabled = false;
+
+        updateStatus(
+          "📹 Scanner active - Point camera at QR code",
+          "scanning"
+        );
+
+        scanLoop(currentVideo);
+      } catch (error) {
+        console.error("Error starting scanner:", error);
+        updateStatus("❌ Camera access error: " + error.message, "error");
+        isScanning = false;
+        document.getElementById("startBtn").disabled = false;
+        document.getElementById("stopBtn").disabled = true;
+      }
+    }
+
+    // Main scanning loop - optimized for speed with zoom support
+    function scanLoop(video) {
+      if (!isScanning) return;
+
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+      function processFrame() {
+        if (!isScanning) return;
+
+        // Apply zoom by scaling the video
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+        const scaledWidth = videoWidth / currentZoom;
+        const scaledHeight = videoHeight / currentZoom;
+        const offsetX = (videoWidth - scaledWidth) / 2;
+        const offsetY = (videoHeight - scaledHeight) / 2;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+          video,
+          offsetX,
+          offsetY,
+          scaledWidth,
+          scaledHeight,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+        try {
+          const result = readBarcodeFromCanvas(canvas);
+
+          if (result && result.format && result.text) {
+            onQRCodeDetected(result.text);
+            return;
+          }
+        } catch (error) {
+          // No QR code found, continue scanning
+        }
+
+        requestAnimationFrame(processFrame);
+      }
+
+      processFrame();
+    }
+
+    // Handle QR code detection
+    function onQRCodeDetected(qrText) {
+      console.log("QR Code detected:", qrText);
+      updateStatus("✅ QR Code detected: " + qrText, "success");
+
+      stopScanner();
+      processAttendance(qrText);
+    }
+
+    // Stop scanning
+    function stopScanner() {
+      isScanning = false;
+
+      if (currentStream) {
+        currentStream.getTracks().forEach((track) => track.stop());
+        currentStream = null;
+      }
+
+      if (currentVideo) {
+        currentVideo = null;
+      }
+
+      document.getElementById("startBtn").disabled = false;
+      document.getElementById("stopBtn").disabled = true;
+      document.getElementById("zoomSlider").disabled = true;
+
+      updateStatus("⏹️ Scanner stopped", "scanning");
+    }
+
+    // Process attendance for all accounts
+    async function processAttendance(qrCode) {
+      updateStatus(
+        "🔄 Processing attendance for all accounts...",
+        "scanning"
+      );
+
+      document.getElementById("results-section").style.display = "block";
+      document.getElementById("results-content").innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Processing attendance for all accounts...</div>
+                </div>
+            `;
+
+      try {
+        // 1. Fetch all accounts from Supabase
+        const { data: accounts, error: accountsError } = await getAccounts();
+
+        if (accountsError) {
+          throw new Error("Failed to fetch accounts: " + accountsError.message);
+        }
+
+        if (!accounts || accounts.length === 0) {
+          throw new Error("No accounts configured.");
+        }
+
+        const results = [];
+
+        // 2. Process for each account - REAL API INTEGRATION
+        for (const account of accounts) {
+          try {
+            // ============================================================
+            // STEP 1: Login to University Portal
+            // ============================================================
+            const loginResponse = await fetch('https://portal.mahindrauniversity.edu.in/api/login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                username: account.username,
+                password: account.password
+              })
+            });
+
+            if (!loginResponse.ok) {
+              throw new Error(`Login failed: ${loginResponse.status}`);
+            }
+
+            const loginData = await loginResponse.json();
+            const authToken = loginData.token || loginData.access_token; // Adjust based on actual API response
+
+            // ============================================================
+            // STEP 2: Mark Attendance with QR Code
+            // ============================================================
+            const attendanceResponse = await fetch('https://portal.mahindrauniversity.edu.in/api/mark-attendance', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}` // Or whatever auth header the API expects
+              },
+              body: JSON.stringify({
+                qr_code: qrCode,
+                // Add any other required fields based on the API documentation
+              })
+            });
+
+            if (!attendanceResponse.ok) {
+              throw new Error(`Attendance marking failed: ${attendanceResponse.status}`);
+            }
+
+            const attendanceData = await attendanceResponse.json();
+
+            // Log success to Supabase
+            await logAttendance(
+              account.username,
+              qrCode,
+              "Success",
+              `Attendance marked successfully via API`
+            );
+
+            results.push({
+              username: account.username,
+              attendance_success: true,
+              student_name: account.username.split('@')[0],
+              message: attendanceData.message || 'Success'
+            });
+
+          } catch (error) {
+            // Log failure to Supabase
+            await logAttendance(
+              account.username,
+              qrCode,
+              "Failed",
+              error.message
+            );
+
+            results.push({
+              username: account.username,
+              attendance_success: false,
+              attendance_error: error.message,
+              student_name: account.username.split('@')[0]
+            });
+          }
+        }
+
+        displayResults(results);
+
+        const successCount = results.filter(r => r.attendance_success).length;
+        const totalCount = results.length;
+
+        updateStatus(
+          `✅ Processed ${successCount}/${totalCount} accounts successfully`,
+          "success"
+        );
+
+        setTimeout(() => {
+          if (!isScanning) {
+            updateStatus(
+              "📱 Ready for next QR code - Click Start Scanner",
+              "scanning"
+            );
+          }
+        }, 3000);
+
+      } catch (error) {
+        console.error("Error processing attendance:", error);
+        displayError("Error: " + error.message);
+        updateStatus("❌ Error: " + error.message, "error");
+      }
+    }
+
+    // Display results
+    function displayResults(results) {
+      let successCount = 0;
+      let partialCount = 0;
+      let errorCount = 0;
+      let resultsHtml = "";
+
+      results.forEach((result) => {
+        let statusClass, statusText, statusBadge;
+
+        if (result.attendance_success) {
+          statusClass = "status-success";
+          statusText = "Attendance marked successfully";
+          statusBadge = "Success";
+          successCount++;
+        } else {
+          statusClass = "status-error";
+          statusText = "Failed";
+          statusBadge = "Failed";
+          errorCount++;
+        }
+
+        let errorMessage = "";
+        if (result.attendance_error) {
+          errorMessage = `<div class="error-message">Error: ${result.attendance_error}</div>`;
+        }
+
+        const studentName = result.student_name
+          ? `<div class="result-name">${result.student_name}</div>`
+          : "";
+
+        resultsHtml += `
+                    <div class="result-item">
+                        <div class="result-info">
+                            <div class="result-username">${result.username}</div>
+                            ${studentName}
+                            <div class="result-status">${statusText}</div>
+                            ${errorMessage}
+                        </div>
+                        <span class="status-badge ${statusClass}">${statusBadge}</span>
+                    </div>
+                `;
+      });
+
+      const summaryHtml = `
+                <div class="summary">
+                    <div class="summary-item">
+                        <div class="summary-number summary-success">${successCount}</div>
+                        <div class="summary-label">Success</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-number summary-error">${errorCount}</div>
+                        <div class="summary-label">Failed</div>
+                    </div>
+                </div>
+
+            `;
+
+      document.getElementById("results-content").innerHTML =
+        summaryHtml + resultsHtml;
+    }
+
+    // Display error message
+    function displayError(message) {
+      document.getElementById("results-content").innerHTML = `
+                <div class="result-item">
+                    <div class="result-info">
+                        <div class="result-status" style="color: #dc3545;">
+                            <strong>Error:</strong> ${message}
+                        </div>
+                    </div>
+                </div>
+            `;
+    }
+
+    // Event listeners
+    document
+      .getElementById("startBtn")
+      .addEventListener("click", startScanner);
+    document.getElementById("stopBtn").addEventListener("click", stopScanner);
+
+    document.getElementById("manual-submit").addEventListener("click", () => {
+      const qrCode = document.getElementById("manual-qr").value.trim();
+      if (qrCode) {
+        stopScanner();
+        processAttendance(qrCode);
+        document.getElementById("manual-qr").value = "";
+      } else {
+        alert("Please enter a QR code");
+      }
+    });
+
+    document.getElementById("manual-qr").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("manual-submit").click();
+      }
+    });
+
+    document
+      .getElementById("cameraSelector")
+      .addEventListener("change", async () => {
+        const selectedDeviceId =
+          document.getElementById("cameraSelector").value;
+
+        // Update zoom range for selected camera
+        if (selectedDeviceId) {
+          await updateZoomRange(selectedDeviceId);
+        }
+
+        // Restart scanner if currently running
+        if (isScanning) {
+          stopScanner();
+          setTimeout(startScanner, 500);
+        }
+      });
+
+    // Zoom slider event listener
+    document.getElementById("zoomSlider").addEventListener("input", (e) => {
+      currentZoom = parseFloat(e.target.value);
+      document.getElementById("zoomValue").textContent =
+        currentZoom.toFixed(1) + "x";
+    });
+
+    // Handle window resize (rotation on mobile)
+    window.addEventListener("resize", () => {
+      if (isScanning && currentVideo && currentVideo.videoWidth > 0) {
+        const canvas = document.getElementById("canvas");
+        setCanvasSize(canvas, currentVideo);
+      }
+    });
+
+    // Initialize when page loads
+    document.addEventListener("DOMContentLoaded", async () => {
+      await requireAuth();
+
+      await initializeZXing();
+
+      // Request camera permissions and enumerate cameras
+      try {
+        // Request permission first (required for camera enumeration with labels)
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
+        stream.getTracks().forEach((track) => track.stop()); // Stop the temporary stream
+
+        // Now enumerate cameras with proper labels and get selected camera
+        const selectedCameraId = await getCameras();
+
+        // Set zoom range for selected camera if available
+        if (selectedCameraId) {
+          await updateZoomRange(selectedCameraId);
+
+          // Set zoom to 3x if camera supports it
+          const zoomSlider = document.getElementById("zoomSlider");
+          const maxZoom = parseFloat(zoomSlider.max);
+          const targetZoom = Math.min(3.0, maxZoom); // Use 3x or max zoom, whichever is lower
+
+          zoomSlider.value = targetZoom;
+          currentZoom = targetZoom;
+          document.getElementById("zoomValue").textContent =
+            targetZoom.toFixed(1) + "x";
+
+          console.log(`Auto-set zoom to ${targetZoom}x`);
+
+          // Auto-start the scanner
+          setTimeout(() => {
+            startScanner();
+          }, 1000); // Small delay to ensure everything is ready
+        }
+      } catch (error) {
+        console.error("Error requesting camera permission:", error);
+        updateStatus("❌ Camera permission required", "error");
+
+        // Try to enumerate cameras anyway (may not have labels)
+        const selectedCameraId = await getCameras();
+        if (selectedCameraId) {
+          await updateZoomRange(selectedCameraId);
+
+          // Still try to auto-start even without full permissions
+          setTimeout(() => {
+            startScanner();
+          }, 1000);
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

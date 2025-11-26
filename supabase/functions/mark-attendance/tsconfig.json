@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+      "lib": ["deno.ns", "deno.net", "deno.unstable"],
+      "types": ["deno.ns"]
+    }
+  }
+  

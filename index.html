@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Juno Attendance</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      overflow-x: hidden;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+    }
+
+    .header h1 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 1;
+      min-width: 0;
+      font-size: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.2rem;
+        gap: 5px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header h1 {
+        font-size: 1rem;
+        flex-direction: column;
+        gap: 2px;
+        text-align: center;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+      }
+    }
+
+    .logout-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    @media (max-width: 480px) {
+      .logout-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: transform 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    .card p {
+      color: #666;
+      margin-bottom: 25px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+      transition: transform 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .features {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .features h3 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .features ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .features li {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .features li:last-child {
+      border-bottom: none;
+    }
+
+    .check-icon {
+      color: #28a745;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <div class="header-content">
+      <h1>🎓 Juno Attendance Dashboard</h1>
+      <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-icon">👥</div>
+        <h2>Manage Accounts</h2>
+        <p>
+          Add, remove, and manage student accounts for bulk attendance marking
+        </p>
+        <a href="accounts.html" class="btn">Manage Accounts</a>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">📱</div>
+        <h2>QR Scanner</h2>
+        <p>
+          Scan QR codes to automatically mark attendance for all configured
+          accounts
+        </p>
+        <a href="scanner.html" class="btn">Open Scanner</a>
+      </div>
+    </div>
+
+    <div class="features">
+      <h3>Features</h3>
+      <ul>
+        <li>
+          <span class="check-icon">✓</span> Multi-account attendance marking
+        </li>
+        <li>
+          <span class="check-icon">✓</span> Concurrent processing for speed
+        </li>
+        <li><span class="check-icon">✓</span> Real-time QR code scanning</li>
+        <li>
+          <span class="check-icon">✓</span> Detailed success/failure reporting
+        </li>
+        <li><span class="check-icon">✓</span> Secure password protection</li>
+        <li><span class="check-icon">✓</span> Easy account management</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabase_client.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await requireAuth();
+
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await logout();
+      });
+    });
+  </script>
+</body>
+
+</html>
