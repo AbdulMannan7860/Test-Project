@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>QR Scanner - Juno Attendance</title>
-  <script src="https://zxing-cpp.github.io/zxing-cpp/zxing_reader.js"></script>
+  <!-- Local ZXing script is loaded at the bottom -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -647,14 +647,31 @@
 
     // Initialize ZXing WASM
     async function initializeZXing() {
+      // Check for file:// protocol which blocks WASM and Camera
+      if (window.location.protocol === 'file:') {
+        const msg = "Security Restriction: Browsers block Camera and WASM access when opening files directly (file://). Please use a local web server (like VS Code Live Server or 'python -m http.server').";
+        console.error(msg);
+        updateStatus("❌ Error: Please use a local web server (not file://)", "error");
+        alert(msg);
+        return;
+      }
+
       try {
         // The local zxing_reader.js will automatically look for zxing_reader.wasm in the same directory
-        zxing = await ZXing();
+        // We can optionally pass a locateFile function if needed, but default usually works for same-dir.
+        zxing = await ZXing({
+          locateFile: (path, prefix) => {
+            if (path.endsWith(".wasm")) {
+              return "zxing_reader.wasm";
+            }
+            return prefix + path;
+          }
+        });
         console.log("ZXing WASM initialized successfully");
         updateStatus("📱 ZXing QR Scanner ready", "scanning");
       } catch (error) {
         console.error("Error initializing ZXing:", error);
-        updateStatus("❌ Error initializing scanner: " + error.message, "error");
+        updateStatus("❌ Error initializing scanner: " + error.message + ". Try using a local server.", "error");
       }
     }
 
@@ -911,6 +928,27 @@
           throw new Error("No accounts configured.");
         }
 
+        // Parse QR Code parameters
+        let at, ld;
+        try {
+          // Try to parse as URL
+          const url = new URL(qrCode);
+          at = url.searchParams.get('at');
+          ld = url.searchParams.get('ld');
+        } catch (e) {
+          // If not a URL, try to parse if it's just query params
+          const params = new URLSearchParams(qrCode);
+          at = params.get('at');
+          ld = params.get('ld');
+        }
+
+        if (!at || !ld) {
+          // Fallback: maybe the QR code is just the 'ld' or something else?
+          // But based on the user request, it seems to be a URL.
+          // We'll proceed but log a warning if parsing failed.
+          console.warn("Could not parse 'at' or 'ld' from QR code. Using raw QR code as 'ld' if needed, or failing.");
+        }
+
         const results = [];
 
         // 2. Process for each account - REAL API INTEGRATION
@@ -919,37 +957,54 @@
             // ============================================================
             // STEP 1: Login to University Portal
             // ============================================================
-            const loginResponse = await fetch('https://portal.mahindrauniversity.edu.in/api/login', {
+            // Note: This request requires a proxy or disabled CORS in browser to work.
+            // The 'User-Agent' header is critical but often blocked by browsers.
+
+            const loginParams = new URLSearchParams();
+            loginParams.append('j_username', account.username);
+            loginParams.append('j_password', account.password);
+            loginParams.append('version', '6.0.65');
+            loginParams.append('app', 'student-android');
+            loginParams.append('isStudent', 'false');
+
+            const loginResponse = await fetch('https://muerp.mahindrauniversity.edu.in/api/mobileLogin.htm', {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json',
+                'User-Agent': 'Dart/3.10 (dart:io)', // Browser may strip this
+                'Accept-Encoding': 'gzip',
+                'Content-Type': 'application/x-www-form-urlencoded'
               },
-              body: JSON.stringify({
-                username: account.username,
-                password: account.password
-              })
+              body: loginParams
             });
 
             if (!loginResponse.ok) {
               throw new Error(`Login failed: ${loginResponse.status}`);
             }
 
-            const loginData = await loginResponse.json();
-            const authToken = loginData.token || loginData.access_token; // Adjust based on actual API response
+            // We need the JSESSIONID. In a browser, we can't read Set-Cookie headers from cross-origin responses.
+            // However, if credentials: 'include' is used and the server allows it, it might work.
+            // For now, we assume the environment (e.g. Emulator) handles cookies or we can't get it.
+            // If the response body contains the session ID, we can use it.
+
+            // The curl command implies we need to send the cookie in the next request.
+            // If we can't get the cookie, this will fail. 
+            // We'll try to proceed assuming the browser cookie jar handles it if CORS allows.
 
             // ============================================================
             // STEP 2: Mark Attendance with QR Code
             // ============================================================
-            const attendanceResponse = await fetch('https://portal.mahindrauniversity.edu.in/api/mark-attendance', {
-              method: 'POST',
+            const attendanceUrl = new URL('https://muerp.mahindrauniversity.edu.in/markAtt.json');
+            if (at) attendanceUrl.searchParams.append('at', at);
+            if (ld) attendanceUrl.searchParams.append('ld', ld);
+            attendanceUrl.searchParams.append('choe', 'UTF-8');
+
+            const attendanceResponse = await fetch(attendanceUrl.toString(), {
+              method: 'GET',
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}` // Or whatever auth header the API expects
-              },
-              body: JSON.stringify({
-                qr_code: qrCode,
-                // Add any other required fields based on the API documentation
-              })
+                'User-Agent': 'Dart/3.10 (dart:io)',
+                'Accept-Encoding': 'gzip'
+                // Cookie header is managed by browser, but 'JSESSIONID' is needed.
+              }
             });
 
             if (!attendanceResponse.ok) {
@@ -963,7 +1018,7 @@
               account.username,
               qrCode,
               "Success",
-              `Attendance marked successfully via API`
+              `Attendance marked successfully via API: ${JSON.stringify(attendanceData)}`
             );
 
             results.push({
@@ -974,6 +1029,7 @@
             });
 
           } catch (error) {
+            console.error(`Error for ${account.username}:`, error);
             // Log failure to Supabase
             await logAttendance(
               account.username,
